@@ -1,0 +1,1255 @@
+<!DOCTYPE html>
+<html lang="th" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบจัดการงานทะเบียนทำเรื่องจบ - มหาวิทยาลัยเฉลิมกาญจนา</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts: Prompt -->
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Alpine.js -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Prompt', 'sans-serif'],
+                    },
+                    colors: {
+                        cku: {
+                            blue: '#0F2C59',
+                            lightBlue: '#1D5D9B',
+                            accent: '#F8DE22',
+                            gold: '#D4AF37',
+                            soft: '#F4F6F9'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Prompt', sans-serif; }
+        [x-cloak] { display: none !important; }
+        @media print {
+            body * { visibility: hidden; }
+            #printableArea, #printableArea *, #reportPrintableArea, #reportPrintableArea * { visibility: visible; }
+            #printableArea { position: absolute; left: 0; top: 0; width: 100%; }
+            #reportPrintableArea { position: absolute; left: 0; top: 0; width: 100%; }
+            .no-print { display: none !important; }
+        }
+    </style>
+</head>
+<body class="h-full bg-cku-soft text-slate-800" x-data="graduationApp()" x-init="init()">
+
+    <div class="min-h-full flex flex-col">
+        <!-- Top Navigation Bar -->
+        <header class="bg-cku-blue text-white shadow-md sticky top-0 z-50">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="w-12 h-12 rounded-full bg-cku-gold flex items-center justify-center text-cku-blue font-bold text-xl shadow-inner border-2 border-white">
+                        <i class="fa-solid fa-graduation-cap"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-lg sm:text-xl font-bold tracking-tight">มหาวิทยาลัยเฉลิมกาญจนา</h1>
+                        <p class="text-xs text-cku-accent font-medium">ระบบงานทะเบียนและตรวจสอบวุฒิการศึกษา (Full-Service Graduation Management)</p>
+                    </div>
+                </div>
+                <!-- Desktop Navigation Tabs -->
+                <nav class="hidden md:flex space-x-2">
+                    <button @click="currentTab = 'dashboard'" :class="currentTab === 'dashboard' ? 'bg-cku-lightBlue text-white shadow' : 'text-slate-200 hover:bg-cku-lightBlue/50'" class="px-4 py-2 rounded-lg text-sm font-medium transition flex items-center space-x-2">
+                        <i class="fa-solid fa-chart-pie"></i><span>แดชบอร์ดสรุป</span>
+                    </button>
+                    <button @click="currentTab = 'requests'" :class="currentTab === 'requests' ? 'bg-cku-lightBlue text-white shadow' : 'text-slate-200 hover:bg-cku-lightBlue/50'" class="px-4 py-2 rounded-lg text-sm font-medium transition flex items-center space-x-2">
+                        <i class="fa-solid fa-list-check"></i><span>จัดการคำขอทั้งหมด</span>
+                    </button>
+                    <button @click="openNewModal()" class="bg-cku-gold text-cku-blue hover:bg-yellow-400 px-4 py-2 rounded-lg text-sm font-bold shadow transition flex items-center space-x-2">
+                        <i class="fa-solid fa-file-circle-plus"></i><span>+ กรอกคำขอทำจบใหม่</span>
+                    </button>
+                </nav>
+                <!-- Mobile Menu Button -->
+                <div class="md:hidden flex items-center space-x-2">
+                    <button @click="openNewModal()" class="bg-cku-gold text-cku-blue px-3 py-1.5 rounded-lg text-xs font-bold shadow">
+                        <i class="fa-solid fa-plus"></i> คำขอใหม่
+                    </button>
+                    <button @click="mobileMenuOpen = !mobileMenuOpen" class="text-white p-2 focus:outline-none">
+                        <i class="fa-solid fa-bars text-xl"></i>
+                    </button>
+                </div>
+            </div>
+            <!-- Mobile Menu Dropdown -->
+            <div x-show="mobileMenuOpen" x-cloak class="md:hidden bg-cku-blue/95 border-t border-blue-900 px-4 pt-2 pb-4 space-y-2">
+                <button @click="currentTab = 'dashboard'; mobileMenuOpen = false" :class="currentTab === 'dashboard' ? 'bg-cku-lightBlue text-white' : 'text-slate-300'" class="w-full text-left px-3 py-2 rounded-md text-sm font-medium flex items-center space-x-2">
+                    <i class="fa-solid fa-chart-pie w-6"></i><span>แดชบอร์ดสรุป</span>
+                </button>
+                <button @click="currentTab = 'requests'; mobileMenuOpen = false" :class="currentTab === 'requests' ? 'bg-cku-lightBlue text-white' : 'text-slate-300'" class="w-full text-left px-3 py-2 rounded-md text-sm font-medium flex items-center space-x-2">
+                    <i class="fa-solid fa-list-check w-6"></i><span>จัดการคำขอทั้งหมด</span>
+                </button>
+            </div>
+        </header>
+
+        <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            
+            <!-- Toast Notification Banner -->
+            <div x-show="toast.show" x-transition x-cloak class="mb-6 p-4 rounded-xl shadow-md flex items-center justify-between text-white" :class="toast.type === 'success' ? 'bg-emerald-600' : 'bg-red-600'">
+                <div class="flex items-center space-x-3">
+                    <i class="fa-solid" :class="toast.type === 'success' ? 'fa-circle-check text-xl' : 'fa-circle-exclamation text-xl'"></i>
+                    <span class="font-medium" x-text="toast.message"></span>
+                </div>
+                <button @click="toast.show = false" class="text-white/80 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <!-- TAB 1: DASHBOARD -->
+            <div x-show="currentTab === 'dashboard'" class="space-y-6">
+                <!-- Welcome Banner -->
+                <div class="bg-gradient-to-r from-cku-blue to-cku-lightBlue rounded-2xl shadow-lg p-6 sm:p-8 text-white flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div>
+                        <span class="bg-cku-accent text-cku-blue text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">ปีการศึกษา 2568 - 2569</span>
+                        <h2 class="text-2xl sm:text-3xl font-bold mt-2">ระบบบริการงานทะเบียนและตรวจสอบวุฒิการศึกษา</h2>
+                        <p class="text-slate-200 text-sm mt-1">มหาวิทยาลัยเฉลิมกาญจนา • รองรับทุกวิทยาเขตและศูนย์ทั่วประเทศ รันเลขเอกสารอัตโนมัติ</p>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <button @click="openNewModal()" class="bg-cku-gold hover:bg-yellow-400 text-cku-blue font-bold px-5 py-3 rounded-xl shadow-lg transition flex items-center space-x-2 text-sm sm:text-base shrink-0">
+                            <i class="fa-solid fa-file-circle-plus"></i>
+                            <span>กรอกคำขอทำจบใหม่</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Export Reports Advanced Toolbar -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-4">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-xl">
+                            <i class="fa-solid fa-file-export"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-bold text-slate-900">รายงานและส่งออกข้อมูล (Export Reports)</h3>
+                            <p class="text-xs text-slate-500">กรองข้อมูลตามหมวดหมู่ วิทยาเขต และช่องทางจัดส่ง เพื่อส่งออกไฟล์ Excel หรือพรีวิวรายงาน PDF อย่างเป็นทางการ</p>
+                        </div>
+                    </div>
+
+                    <!-- Filters Grid -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                        <!-- 1. Category & Status Filter -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">หมวดหมู่และสถานะ</label>
+                            <select x-model="exportFilter.category" class="w-full py-2 px-3 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-cku-lightBlue focus:outline-none">
+                                <option value="all">รายชื่อนักศึกษาทั้งหมด</option>
+                                <option value="ส่งการเงินและค้างชำระ">รายชื่อส่งการเงินและค้างชำระ</option>
+                                <option value="กำลังดำเนินการ">รายชื่อกำลังดำเนินการ (ตรวจวุฒิ)</option>
+                                <option value="ได้รับแล้ว">รายชื่อได้รับวุฒิแล้ว</option>
+                                <option value="ยังไม่ได้รับ">รายชื่อยังไม่ได้รับวุฒิ</option>
+                                <option value="มีปัญหา">รายชื่อนักศึกษาที่มีปัญหา</option>
+                                <option value="เสร็จสมบูรณ์">รายชื่อเสร็จสมบูรณ์</option>
+                            </select>
+                        </div>
+
+                        <!-- 2. Campus Filter (8 Campuses + Overview) -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">วิทยาเขต / ศูนย์</label>
+                            <select x-model="exportFilter.campus" class="w-full py-2 px-3 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-cku-lightBlue focus:outline-none">
+                                <option value="all">ภาพรวมทุกศูนย์พร้อมกัน (ทุกวิทยาเขต)</option>
+                                <option value="ศรีสะเกษ">1. ศรีสะเกษ</option>
+                                <option value="สุรินทร์">2. สุรินทร์</option>
+                                <option value="บุรีรัมย์">3. บุรีรัมย์</option>
+                                <option value="นครศรีธรรมราช">4. นครศรีธรรมราช</option>
+                                <option value="เพชรบูรณ์">5. เพชรบูรณ์</option>
+                                <option value="ระยอง">6. ระยอง</option>
+                                <option value="ฉะเชิงเทรา">7. ฉะเชิงเทรา</option>
+                                <option value="นครราชสีมา">8. นครราชสีมา</option>
+                            </select>
+                        </div>
+
+                        <!-- 3. Delivery Channel Filter -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">ช่องทางจัดส่ง</label>
+                            <select x-model="exportFilter.delivery" class="w-full py-2 px-3 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-cku-lightBlue focus:outline-none">
+                                <option value="all">ช่องทางจัดส่งทั้งหมด</option>
+                                <option value="ไปรษณีย์">กลุ่มจัดส่งไปรษณีย์</option>
+                                <option value="ถือไปเอง">กลุ่มถือไปเอง (รับที่มหาวิทยาลัย)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Export Actions -->
+                    <div class="flex flex-wrap items-center justify-between gap-3 pt-2">
+                        <div class="text-xs text-slate-600 font-medium">
+                            พบข้อมูลตรงตามเงื่อนไข: <span class="font-bold text-cku-blue text-sm" x-text="getExportFilteredItems().length"></span> รายการ
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <button @click="exportCustomExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow transition flex items-center space-x-2">
+                                <i class="fa-solid fa-file-excel"></i>
+                                <span>Export Excel (CSV)</span>
+                            </button>
+                            <button @click="openCustomReportModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow transition flex items-center space-x-2">
+                                <i class="fa-solid fa-file-pdf"></i>
+                                <span>Preview PDF</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Statistics Cards Grid -->
+                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-8 gap-3">
+                    <!-- Total -->
+                    <div @click="filterStatus = 'all'; currentTab = 'requests'" class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 hover:shadow-md cursor-pointer transition">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-semibold text-slate-500 uppercase">คำขอทั้งหมด</span>
+                            <div class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-sm">
+                                <i class="fa-solid fa-folder-open"></i>
+                            </div>
+                        </div>
+                        <div class="mt-2 text-2xl font-bold text-slate-900" x-text="stats.total">0</div>
+                        <div class="text-xs text-slate-500 mt-1">รายการ</div>
+                    </div>
+
+                    <!-- Pending Payment / Debt -->
+                    <div @click="filterStatus = 'ค้างชำระ'; currentTab = 'requests'" class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 hover:shadow-md cursor-pointer transition">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-semibold text-rose-600 uppercase">ค้างชำระ</span>
+                            <div class="w-8 h-8 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center font-bold text-sm">
+                                <i class="fa-solid fa-wallet"></i>
+                            </div>
+                        </div>
+                        <div class="mt-2 text-2xl font-bold text-rose-600" x-text="stats.debt">0</div>
+                        <div class="text-xs text-rose-600 mt-1">รอเคลียร์</div>
+                    </div>
+
+                    <!-- Sent to Finance (ส่งการเงิน) -->
+                    <div @click="filterStatus = 'ส่งการเงิน'; currentTab = 'requests'" class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 hover:shadow-md cursor-pointer transition">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-semibold text-sky-600 uppercase">ส่งการเงิน</span>
+                            <div class="w-8 h-8 rounded-lg bg-sky-50 text-sky-600 flex items-center justify-center font-bold text-sm">
+                                <i class="fa-solid fa-file-invoice-dollar"></i>
+                            </div>
+                        </div>
+                        <div class="mt-2 text-2xl font-bold text-sky-600" x-text="stats.sentFinance">0</div>
+                        <div class="text-xs text-sky-600 mt-1">ตรวจสอบการเงิน</div>
+                    </div>
+
+                    <!-- In Progress -->
+                    <div @click="filterStatus = 'กำลังดำเนินการ'; currentTab = 'requests'" class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 hover:shadow-md cursor-pointer transition">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-semibold text-amber-600 uppercase">กำลังทำ</span>
+                            <div class="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center font-bold text-sm">
+                                <i class="fa-solid fa-spinner animate-spin"></i>
+                            </div>
+                        </div>
+                        <div class="mt-2 text-2xl font-bold text-amber-600" x-text="stats.inProgress">0</div>
+                        <div class="text-xs text-amber-600 mt-1">ตรวจวุฒิ</div>
+                    </div>
+
+                    <!-- Received -->
+                    <div @click="filterStatus = 'ได้รับแล้ว'; currentTab = 'requests'" class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 hover:shadow-md cursor-pointer transition">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-semibold text-indigo-600 uppercase">ได้รับวุฒิ</span>
+                            <div class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-sm">
+                                <i class="fa-solid fa-square-check"></i>
+                            </div>
+                        </div>
+                        <div class="mt-2 text-2xl font-bold text-indigo-600" x-text="stats.received">0</div>
+                        <div class="text-xs text-indigo-600 mt-1">ตอบกลับแล้ว</div>
+                    </div>
+
+                    <!-- Not Received -->
+                    <div @click="filterStatus = 'ยังไม่ได้รับ'; currentTab = 'requests'" class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 hover:shadow-md cursor-pointer transition">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-semibold text-orange-600 uppercase">ยังไม่ได้รับ</span>
+                            <div class="w-8 h-8 rounded-lg bg-orange-50 text-orange-600 flex items-center justify-center font-bold text-sm">
+                                <i class="fa-solid fa-clock"></i>
+                            </div>
+                        </div>
+                        <div class="mt-2 text-2xl font-bold text-orange-600" x-text="stats.notReceived">0</div>
+                        <div class="text-xs text-orange-600 mt-1">รอสถาบันเดิม</div>
+                    </div>
+
+                    <!-- Issue / Problem -->
+                    <div @click="filterStatus = 'มีปัญหา'; currentTab = 'requests'" class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 hover:shadow-md cursor-pointer transition">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-semibold text-red-600 uppercase">มีปัญหา</span>
+                            <div class="w-8 h-8 rounded-lg bg-red-50 text-red-600 flex items-center justify-center font-bold text-sm">
+                                <i class="fa-solid fa-triangle-exclamation"></i>
+                            </div>
+                        </div>
+                        <div class="mt-2 text-2xl font-bold text-red-600" x-text="stats.issue">0</div>
+                        <div class="text-xs text-red-600 mt-1">รันเลขใหม่</div>
+                    </div>
+
+                    <!-- Completed -->
+                    <div @click="filterStatus = 'เสร็จสมบูรณ์'; currentTab = 'requests'" class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 hover:shadow-md cursor-pointer transition">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-semibold text-emerald-600 uppercase">เสร็จสมบูรณ์</span>
+                            <div class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-sm">
+                                <i class="fa-solid fa-circle-check"></i>
+                            </div>
+                        </div>
+                        <div class="mt-2 text-2xl font-bold text-emerald-600" x-text="stats.completed">0</div>
+                        <div class="text-xs text-emerald-600 mt-1">จบกระบวนการ</div>
+                    </div>
+                </div>
+
+                <!-- Incomplete List Section (Dashboard Table for Pending / Issues) -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="p-6 border-b border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                        <div>
+                            <h3 class="text-lg font-bold text-slate-900 flex items-center space-x-2">
+                                <i class="fa-solid fa-clock-rotate-left text-cku-blue"></i>
+                                <span>รายชื่อนักศึกษาที่ยังดำเนินเรื่องไม่เสร็จสมบูรณ์ (Pending & Active Issues)</span>
+                            </h3>
+                            <p class="text-xs text-slate-500 mt-1">แสดงรายการที่อยู่ระหว่างตรวจสอบวุฒิ ส่งการเงิน มีปัญหา หรือยังไม่ได้รับเอกสารตอบกลับ</p>
+                        </div>
+                        <button @click="currentTab = 'requests'" class="text-sm font-semibold text-cku-lightBlue hover:underline flex items-center space-x-1">
+                            <span>ดูทั้งหมด</span><i class="fa-solid fa-arrow-right text-xs"></i>
+                        </button>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-slate-50 text-slate-600 text-xs font-bold uppercase tracking-wider border-b border-slate-200">
+                                    <th class="py-3 px-4">เลขทะเบียนคำขอ</th>
+                                    <th class="py-3 px-4">วิทยาเขต/ศูนย์</th>
+                                    <th class="py-3 px-4">รหัสนักศึกษา / ชื่อ-นามสกุลปัจจุบัน</th>
+                                    <th class="py-3 px-4">สถาบันเดิม / คณะ</th>
+                                    <th class="py-3 px-4">สถานะตรวจสอบวุฒิ</th>
+                                    <th class="py-3 px-4 text-right">พิมพ์ฟอร์ม / จัดการด่วน</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100 text-sm">
+                                <template x-for="item in incompleteList" :key="item.id">
+                                    <tr class="hover:bg-slate-50 transition">
+                                        <td class="py-3 px-4 font-mono font-bold text-cku-blue" x-text="item.regNo"></td>
+                                        <td class="py-3 px-4">
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-blue-50 text-cku-blue border border-blue-200" x-text="item.campus"></span>
+                                        </td>
+                                        <td class="py-3 px-4">
+                                            <div class="font-bold text-slate-900" x-text="item.fullname"></div>
+                                            <div class="text-xs text-slate-500">รหัส: <span x-text="item.studentId"></span> | ปชช: <span x-text="item.idCard"></span></div>
+                                            <template x-if="item.nameChangeInfo">
+                                                <div class="text-xs text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded mt-0.5 inline-block">เปลี่ยนชื่อ: <span x-text="item.nameChangeInfo"></span></div>
+                                            </template>
+                                        </td>
+                                        <td class="py-3 px-4">
+                                            <div class="font-medium text-slate-800" x-text="item.previousSchool"></div>
+                                            <div class="text-xs text-slate-500" x-text="item.faculty + ' / ' + item.major"></div>
+                                        </td>
+                                        <td class="py-3 px-4">
+                                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold"
+                                                  :class="{
+                                                      'bg-rose-100 text-rose-800': item.status === 'ค้างชำระ',
+                                                      'bg-sky-100 text-sky-800': item.status === 'ส่งการเงิน',
+                                                      'bg-amber-100 text-amber-800': item.status === 'กำลังดำเนินการ',
+                                                      'bg-indigo-100 text-indigo-800': item.status === 'ได้รับแล้ว',
+                                                      'bg-orange-100 text-orange-800': item.status === 'ยังไม่ได้รับ',
+                                                      'bg-red-100 text-red-800': item.status === 'มีปัญหา'
+                                                  }">
+                                                <span x-text="item.status"></span>
+                                            </span>
+                                        </td>
+                                        <td class="py-3 px-4 text-right space-x-1">
+                                            <!-- Print Button -->
+                                            <button @click="openPrintModal(item)" title="พิมพ์ฟอร์มขอตรวจสอบวุฒิ" class="p-2 text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition">
+                                                <i class="fa-solid fa-print"></i>
+                                            </button>
+                                            <!-- Resubmit with new number if issue -->
+                                            <template x-if="item.status === 'มีปัญหา'">
+                                                <button @click="resubmitWithNewNumber(item)" title="ดำเนินการส่งใหม่ (รันเลขใหม่)" class="px-2.5 py-1.5 text-xs bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg shadow transition">
+                                                    <i class="fa-solid fa-rotate-right mr-1"></i> ส่งใหม่/รันเลขใหม่
+                                                </button>
+                                            </template>
+                                            <button @click="openEditModal(item)" title="แก้ไขข้อมูล/สถานะ" class="p-2 text-slate-600 hover:text-cku-blue bg-slate-100 hover:bg-slate-200 rounded-lg transition">
+                                                <i class="fa-solid fa-pen-to-square"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                </template>
+                                <template x-if="incompleteList.length === 0">
+                                    <tr>
+                                        <td colspan="6" class="py-8 text-center text-slate-400">
+                                            <i class="fa-solid fa-circle-check text-4xl mb-2 text-emerald-500"></i>
+                                            <p class="font-medium">ยอดเยี่ยม! ไม่มีรายการค้างหรือปัญหาในระบบ ทุกเคสเสร็จสมบูรณ์แล้ว</p>
+                                        </td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 2: ALL REQUESTS & MANAGEMENT -->
+            <div x-show="currentTab === 'requests'" class="space-y-6" x-cloak>
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+                        <div>
+                            <h2 class="text-xl font-bold text-slate-900">จัดการคำขอตรวจสอบวุฒิและทำจบทั้งหมด</h2>
+                            <p class="text-xs text-slate-500 mt-1">ค้นหา ตรวจสอบสถานะ พิมพ์ฟอร์มเอกสาร หรือจัดการรายการทะเบียนทุกวิทยาเขต/ศูนย์</p>
+                        </div>
+                        <div class="flex items-center space-x-3 w-full md:w-auto">
+                            <button @click="openNewModal()" class="w-full md:w-auto bg-cku-blue hover:bg-cku-lightBlue text-white px-4 py-2.5 rounded-xl text-sm font-bold shadow transition flex items-center justify-center space-x-2">
+                                <i class="fa-solid fa-plus"></i>
+                                <span>สร้างคำขอใหม่</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Search and Filters Bar -->
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                        <!-- Search Box -->
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                                <i class="fa-solid fa-magnifying-glass"></i>
+                            </span>
+                            <input type="text" x-model="searchQuery" placeholder="ค้นหา เลข ปชช, รหัส นศ, ชื่อ, เลขทะเบียน..." class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-cku-lightBlue focus:bg-white">
+                        </div>
+
+                        <!-- Filter Campus -->
+                        <div>
+                            <select x-model="filterCampus" class="w-full py-2.5 px-4 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-cku-lightBlue">
+                                <option value="all">ทุกวิทยาเขต/ศูนย์</option>
+                                <option value="ศรีสะเกษ">1. ศรีสะเกษ</option>
+                                <option value="สุรินทร์">2. สุรินทร์</option>
+                                <option value="บุรีรัมย์">3. บุรีรัมย์</option>
+                                <option value="นครศรีธรรมราช">4. นครศรีธรรมราช</option>
+                                <option value="เพชรบูรณ์">5. เพชรบูรณ์</option>
+                                <option value="ระยอง">6. ระยอง</option>
+                                <option value="ฉะเชิงเทรา">7. ฉะเชิงเทรา</option>
+                                <option value="นครราชสีมา">8. นครราชสีมา</option>
+                            </select>
+                        </div>
+
+                        <!-- Filter Status -->
+                        <div>
+                            <select x-model="filterStatus" class="w-full py-2.5 px-4 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-cku-lightBlue">
+                                <option value="all">สถานะทั้งหมด (ทุกขั้นตอน)</option>
+                                <option value="ค้างชำระ">ค้างชำระ</option>
+                                <option value="ส่งการเงิน">ส่งการเงิน</option>
+                                <option value="กำลังดำเนินการ">กำลังดำเนินการ</option>
+                                <option value="ได้รับแล้ว">ได้รับแล้ว</option>
+                                <option value="ยังไม่ได้รับ">ยังไม่ได้รับ</option>
+                                <option value="มีปัญหา">มีปัญหา (ไม่สมบูรณ์)</option>
+                                <option value="เสร็จสมบูรณ์">เสร็จสมบูรณ์</option>
+                            </select>
+                        </div>
+
+                        <!-- Filter Delivery Type -->
+                        <div>
+                            <select x-model="filterDelivery" class="w-full py-2.5 px-4 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-cku-lightBlue">
+                                <option value="all">ช่องทางจัดส่งทั้งหมด</option>
+                                <option value="ไปรษณีย์">ไปรษณีย์</option>
+                                <option value="ถือไปเอง">ถือไปเอง (รับที่มหาวิทยาลัย)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Full Table -->
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-slate-50 text-slate-600 text-xs font-bold uppercase tracking-wider border-b border-slate-200">
+                                    <th class="py-3 px-4">เลขทะเบียนคำขอ</th>
+                                    <th class="py-3 px-4">วิทยาเขต/ศูนย์</th>
+                                    <th class="py-3 px-4">รหัสนักศึกษา / ชื่อ-นามสกุล</th>
+                                    <th class="py-3 px-4">สถาบันเดิม / คณะ / สาขา</th>
+                                    <th class="py-3 px-4">การจัดส่ง</th>
+                                    <th class="py-3 px-4">สถานะปัจจุบัน</th>
+                                    <th class="py-3 px-4 text-right">การจัดการ & พิมพ์ฟอร์ม</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100 text-sm">
+                                <template x-for="item in filteredRequests" :key="item.id">
+                                    <tr class="hover:bg-slate-50 transition">
+                                        <td class="py-3 px-4 font-mono font-bold text-cku-blue" x-text="item.regNo"></td>
+                                        <td class="py-3 px-4">
+                                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-blue-50 text-cku-blue border border-blue-200 shadow-sm" x-text="item.campus"></span>
+                                        </td>
+                                        <td class="py-3 px-4">
+                                            <div class="font-bold text-slate-900" x-text="item.fullname"></div>
+                                            <div class="text-xs text-slate-500 font-mono">นศ: <span x-text="item.studentId"></span></div>
+                                            <div class="text-xs text-slate-500 font-mono">ปชช: <span x-text="item.idCard"></span></div>
+                                            <template x-if="item.nameChangeInfo">
+                                                <div class="text-xs text-amber-600 bg-amber-50 px-1 py-0.5 rounded mt-0.5 inline-block">เปลี่ยนชื่อ: <span x-text="item.nameChangeInfo"></span></div>
+                                            </template>
+                                        </td>
+                                        <td class="py-3 px-4">
+                                            <div class="font-semibold text-cku-lightBlue" x-text="item.previousSchool"></div>
+                                            <div class="text-xs text-slate-700" x-text="item.faculty"></div>
+                                            <div class="text-xs text-slate-500" x-text="item.major"></div>
+                                        </td>
+                                        <td class="py-3 px-4">
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold mb-1"
+                                                  :class="item.deliveryType === 'ไปรษณีย์' ? 'bg-blue-100 text-blue-800' : 'bg-amber-100 text-amber-800'">
+                                                <i class="fa-solid mr-1" :class="item.deliveryType === 'ไปรษณีย์' ? 'fa-truck-fast' : 'fa-hand-holding-hand'"></i>
+                                                <span x-text="item.deliveryType"></span>
+                                            </span>
+                                            <div class="text-xs text-slate-600">
+                                                <template x-if="item.deliveryType === 'ไปรษณีย์'">
+                                                    <div>
+                                                        <span class="font-semibold">พัสดุ:</span> <span x-text="item.trackingNo || 'ยังไม่มีเลขพัสดุ'" :class="item.trackingNo ? 'text-emerald-600 font-mono font-bold' : 'text-slate-400'"></span>
+                                                    </div>
+                                                </template>
+                                                <template x-if="item.deliveryType === 'ถือไปเอง'">
+                                                    <span class="text-slate-500 italic">มารับด้วยตนเอง</span>
+                                                </template>
+                                            </div>
+                                        </td>
+                                        <td class="py-3 px-4">
+                                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold"
+                                                  :class="{
+                                                      'bg-rose-100 text-rose-800': item.status === 'ค้างชำระ',
+                                                      'bg-sky-100 text-sky-800': item.status === 'ส่งการเงิน',
+                                                      'bg-amber-100 text-amber-800': item.status === 'กำลังดำเนินการ',
+                                                      'bg-indigo-100 text-indigo-800': item.status === 'ได้รับแล้ว',
+                                                      'bg-orange-100 text-orange-800': item.status === 'ยังไม่ได้รับ',
+                                                      'bg-red-100 text-red-800': item.status === 'มีปัญหา',
+                                                      'bg-emerald-100 text-emerald-800': item.status === 'เสร็จสมบูรณ์'
+                                                  }">
+                                                <span x-text="item.status"></span>
+                                            </span>
+                                        </td>
+                                        <td class="py-3 px-4 text-right space-x-1">
+                                            <button @click="openPrintModal(item)" title="พิมพ์ฟอร์มขอตรวจสอบวุฒิ" class="p-2 text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition">
+                                                <i class="fa-solid fa-print"></i>
+                                            </button>
+                                            <template x-if="item.status === 'มีปัญหา'">
+                                                <button @click="resubmitWithNewNumber(item)" title="ดำเนินการส่งใหม่ (รันเลขใหม่)" class="px-2.5 py-1.5 text-xs bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg shadow transition">
+                                                    <i class="fa-solid fa-rotate-right mr-1"></i> ส่งใหม่/รันเลขใหม่
+                                                </button>
+                                            </template>
+                                            <button @click="openEditModal(item)" title="แก้ไขข้อมูล/สถานะ" class="p-2 text-slate-600 hover:text-cku-blue bg-slate-100 hover:bg-slate-200 rounded-lg transition">
+                                                <i class="fa-solid fa-pen-to-square"></i>
+                                            </button>
+                                            <button @click="deleteRequest(item.id)" title="ลบรายการ" class="p-2 text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-lg transition">
+                                                <i class="fa-solid fa-trash"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                </template>
+                                <template x-if="filteredRequests.length === 0">
+                                    <tr>
+                                        <td colspan="7" class="py-12 text-center text-slate-400">
+                                            <i class="fa-solid fa-folder-open text-4xl mb-2"></i>
+                                            <p class="font-medium">ไม่พบข้อมูลคำขอตามเงื่อนไขที่ค้นหา</p>
+                                        </td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+
+        <!-- MODAL: ADD / EDIT REQUEST FORM -->
+        <div x-show="showModal" x-cloak class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+            <div @click.outside="closeModal()" class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full overflow-hidden transform transition-all">
+                <!-- Modal Header -->
+                <div class="bg-cku-blue text-white px-6 py-4 flex items-center justify-between">
+                    <div class="flex items-center space-x-2">
+                        <i class="fa-solid fa-file-pen text-cku-gold text-lg"></i>
+                        <h3 class="font-bold text-lg" x-text="isEditMode ? 'แก้ไขข้อมูลคำขอทำจบ' : 'กรอกคำขอทำเรื่องจบใหม่'"></h3>
+                    </div>
+                    <button @click="closeModal()" class="text-white/80 hover:text-white p-1">
+                        <i class="fa-solid fa-xmark text-xl"></i>
+                    </button>
+                </div>
+
+                <!-- Modal Body Form -->
+                <form @submit.prevent="saveRequest()" class="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
+                    <!-- Auto-generated Registration Number Notice -->
+                    <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center justify-between">
+                        <div>
+                            <span class="text-xs font-bold text-cku-blue uppercase">เลขทะเบียนคำขอตรวจสอบวุฒิ (Auto-Generated)</span>
+                            <div class="text-lg font-mono font-bold text-cku-blue" x-text="form.regNo"></div>
+                        </div>
+                        <span class="text-xs text-slate-500 bg-white px-3 py-1 rounded-full border border-blue-100 shadow-sm">รันเลขเอกสารอัตโนมัติ</span>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <!-- Campus Selection -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">วิทยาเขต/ศูนย์ <span class="text-rose-500">*</span></label>
+                            <select x-model="form.campus" required class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-cku-lightBlue focus:outline-none font-semibold text-cku-blue">
+                                <option value="">-- เลือกวิทยาเขต/ศูนย์ --</option>
+                                <option value="ศรีสะเกษ">1. ศรีสะเกษ</option>
+                                <option value="สุรินทร์">2. สุรินทร์</option>
+                                <option value="บุรีรัมย์">3. บุรีรัมย์</option>
+                                <option value="นครศรีธรรมราช">4. นครศรีธรรมราช</option>
+                                <option value="เพชรบูรณ์">5. เพชรบูรณ์</option>
+                                <option value="ระยอง">6. ระยอง</option>
+                                <option value="ฉะเชิงเทรา">7. ฉะเชิงเทรา</option>
+                                <option value="นครราชสีมา">8. นครราชสีมา</option>
+                            </select>
+                        </div>
+                        <!-- ID Card (13 digits) -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">เลขประจำตัวประชาชน (13 หลัก) <span class="text-rose-500">*</span></label>
+                            <input type="text" x-model="form.idCard" required maxlength="13" placeholder="เช่น 1219900123456" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-mono focus:ring-2 focus:ring-cku-lightBlue focus:outline-none">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <!-- Student ID / School ID -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">รหัสนักศึกษา / รหัสนักเรียนในวุฒิ <span class="text-rose-500">*</span></label>
+                            <input type="text" x-model="form.studentId" required placeholder="เช่น 6440301001 หรือเลขเดิมในวุฒิ" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-cku-lightBlue focus:outline-none">
+                        </div>
+                        <!-- Phone Number -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">เบอร์โทรศัพท์ติดต่อ <span class="text-rose-500">*</span></label>
+                            <input type="text" x-model="form.phone" required placeholder="เช่น 0891234567" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-cku-lightBlue focus:outline-none">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <!-- Full Name -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">ชื่อ - นามสกุล (ปัจจุบัน) <span class="text-rose-500">*</span></label>
+                            <input type="text" x-model="form.fullname" required placeholder="เช่น นายสมชาย ใจดี" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-cku-lightBlue focus:outline-none">
+                        </div>
+                        <!-- Name Change Info -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">กรณีเปลี่ยนชื่อ/นามสกุลใหม่ (ถ้ามี)</label>
+                            <input type="text" x-model="form.nameChangeInfo" placeholder="เช่น จาก นายสมศักดิ์ รักดี เป็น นายสมชาย ใจดี" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-cku-lightBlue focus:outline-none">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <!-- Previous School / Institution -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">ชื่อสถาบันการศึกษาเดิม (สำหรับตรวจสอบวุฒิ) <span class="text-rose-500">*</span></label>
+                            <input type="text" x-model="form.previousSchool" required placeholder="เช่น วิทยาลัยเทคนิกระยอง / ม.ราชภัฏ..." class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-cku-lightBlue focus:outline-none">
+                        </div>
+                        <!-- Faculty -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">คณะ <span class="text-rose-500">*</span></label>
+                            <select x-model="form.faculty" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-cku-lightBlue focus:outline-none">
+                                <option value="คณะรัฐศาสตร์">คณะรัฐศาสตร์</option>
+                                <option value="คณะบริหารธุรกิจและการบัญชี">คณะบริหารธุรกิจและการบัญชี</option>
+                                <option value="คณะศึกษาศาสตร์">คณะศึกษาศาสตร์</option>
+                                <option value="คณะพยาศาสตร์และวิทยาศาสตร์สุขภาพ">คณะพยาศาสตร์และวิทยาศาสตร์สุขภาพ</option>
+                                <option value="คณะศิลปศาสตร์">คณะศิลปศาสตร์</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <!-- Major -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">สาขาวิชา <span class="text-rose-500">*</span></label>
+                            <input type="text" x-model="form.major" required placeholder="เช่น รัฐศาสตรบัณฑิต" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-cku-lightBlue focus:outline-none">
+                        </div>
+                        <!-- Status -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">สถานะคำขอ / ตรวจสอบวุฒิ <span class="text-rose-500">*</span></label>
+                            <select x-model="form.status" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-cku-lightBlue focus:outline-none">
+                                <option value="ค้างชำระ">ค้างชำระ / เอกสารการเงิน</option>
+                                <option value="ส่งการเงิน">ส่งการเงิน (รอตรวจสอบการเงิน)</option>
+                                <option value="กำลังดำเนินการ">กำลังดำเนินการ / ตรวจสอบวุฒิ</option>
+                                <option value="ได้รับแล้ว">ได้รับแล้ว (วุฒิตอบกลับ)</option>
+                                <option value="ยังไม่ได้รับ">ยังไม่ได้รับ</option>
+                                <option value="มีปัญหา">มีปัญหา (ไม่สมบูรณ์/ต้องส่งใหม่)</option>
+                                <option value="เสร็จสมบูรณ์">เสร็จสมบูรณ์</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div>
+                        <!-- Delivery Type -->
+                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">รูปแบบการจัดส่ง <span class="text-rose-500">*</span></label>
+                        <select x-model="form.deliveryType" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-cku-lightBlue focus:outline-none">
+                            <option value="ไปรษณีย์">จัดส่งโดยไปรษณีย์</option>
+                            <option value="ถือไปเอง">ถือไปเอง (รับที่มหาวิทยาลัย)</option>
+                        </select>
+                    </div>
+
+                    <!-- Postal Address (Conditional) -->
+                    <div x-show="form.deliveryType === 'ไปรษณีย์'" x-transition class="space-y-4 pt-2">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">ที่อยู่จัดส่งไปรษณีย์</label>
+                            <textarea x-model="form.address" rows="2" placeholder="บ้านเลขที่ ถนน ตำบล อำเภอ จังหวัด รหัสไปรษณีย์" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-cku-lightBlue focus:outline-none"></textarea>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">เลขพัสดุไปรษณีย์ (Tracking No.)</label>
+                            <input type="text" x-model="form.trackingNo" placeholder="เช่น ED123456789TH" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-mono focus:ring-2 focus:ring-cku-lightBlue focus:outline-none">
+                        </div>
+                    </div>
+
+                    <!-- Modal Footer Buttons -->
+                    <div class="pt-4 flex items-center justify-end space-x-3 border-t border-slate-100">
+                        <button type="button" @click="closeModal()" class="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-700 font-medium hover:bg-slate-100 text-sm transition">
+                            ยกเลิก
+                        </button>
+                        <button type="submit" class="px-6 py-2.5 rounded-xl bg-cku-blue hover:bg-cku-lightBlue text-white font-bold text-sm shadow transition">
+                            <i class="fa-solid fa-floppy-disk mr-1"></i> บันทึกข้อมูลคำขอ
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- MODAL: PRINT OFFICIAL FORM -->
+        <div x-show="showPrintModal" x-cloak class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4">
+            <div @click.outside="closePrintModal()" class="bg-white rounded-2xl shadow-2xl max-w-3xl w-full overflow-hidden">
+                <!-- Modal Header -->
+                <div class="bg-cku-blue text-white px-6 py-4 flex items-center justify-between no-print">
+                    <div class="flex items-center space-x-2">
+                        <i class="fa-solid fa-print text-cku-gold text-lg"></i>
+                        <h3 class="font-bold text-lg">พิมพ์ฟอร์มหนังสือขอตรวจสอบวุฒิการศึกษา</h3>
+                    </div>
+                    <button @click="closePrintModal()" class="text-white/80 hover:text-white p-1">
+                        <i class="fa-solid fa-xmark text-xl"></i>
+                    </button>
+                </div>
+
+                <!-- Printable Document Preview Area -->
+                <div class="p-8 bg-white text-slate-900 font-sans" id="printableArea">
+                    <div class="max-w-2xl mx-auto border-2 border-slate-800 p-8 space-y-6 relative bg-white">
+                        <!-- University Header -->
+                        <div class="text-center space-y-1 border-b-2 border-slate-300 pb-4">
+                            <div class="text-xl font-bold text-cku-blue">มหาวิทยาลัยเฉลิมกาญจนา</div>
+                            <div class="text-xs text-cku-blue font-semibold">วิทยาเขต/ศูนย์: <span x-text="printData.campus"></span></div>
+                            <div class="text-xs text-slate-600">Chalermkanchana University</div>
+                            <div class="text-sm font-semibold mt-2">สำนักทะเบียนและประเมินผลการศึกษา</div>
+                        </div>
+
+                        <!-- Document Details & Ref Number -->
+                        <div class="flex justify-between items-start pt-2">
+                            <div class="text-xs space-y-1">
+                                <p><span class="font-semibold">ที่:</span> ศก.<span x-text="printData.campus"></span> / <span class="font-mono font-bold text-cku-blue" x-text="printData.regNo"></span></p>
+                                <p><span class="font-semibold">วันที่:</span> <span x-text="currentDateFormatted"></span></p>
+                            </div>
+                            <div class="text-right text-xs space-y-1">
+                                <p><span class="font-semibold">เรื่อง:</span> ขอตรวจสอบคุณวุฒิการศึกษา</p>
+                                <p><span class="font-semibold">เรียน:</span> ผู้อำนวยการ / นายทะเบียน <span class="font-bold underline" x-text="printData.previousSchool"></span></p>
+                            </div>
+                        </div>
+
+                        <!-- Body Paragraph -->
+                        <div class="text-sm leading-relaxed space-y-4 pt-2">
+                            <p>ด้วย มหาวิทยาลัยเฉลิมกาญจนา วิทยาเขต/ศูนย์<span class="font-bold underline" x-text="printData.campus"></span> กำลังดำเนินการตรวจสอบคุณวุฒิการศึกษาของนักศึกษา เพื่อเสนออนุมัติปริญญาตรี ประจำปีการศึกษา 2568 - 2569 โดยมีรายนามนักศึกษาผู้สำเร็จการศึกษาดังรายละเอียดต่อไปนี้:</p>
+                            
+                            <div class="bg-slate-50 border border-slate-300 rounded-lg p-4 space-y-2 text-sm">
+                                <div class="grid grid-cols-2 gap-2">
+                                    <div><span class="font-semibold">วิทยาเขต/ศูนย์:</span> <span class="font-bold text-cku-blue" x-text="printData.campus"></span></div>
+                                    <div><span class="font-semibold">เลข ปชช:</span> <span class="font-mono" x-text="printData.idCard"></span></div>
+                                </div>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <div><span class="font-semibold">ชื่อ - นามสกุล (ปัจจุบัน):</span> <span class="font-bold text-cku-blue" x-text="printData.fullname"></span></div>
+                                    <div><span class="font-semibold">รหัสนักเรียน/นักศึกษาเดิม:</span> <span class="font-mono font-bold" x-text="printData.studentId"></span></div>
+                                </div>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <div><span class="font-semibold">การเปลี่ยนชื่อ/สกุล:</span> <span x-text="printData.nameChangeInfo || 'ไม่มี'"></span></div>
+                                    <div><span class="font-semibold">หลักสูตรที่เข้าศึกษา:</span> <span x-text="printData.major"></span></div>
+                                </div>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <div><span class="font-semibold">คณะ:</span> <span x-text="printData.faculty"></span></div>
+                                    <div><span class="font-semibold">สถาบันเดิม:</span> <span class="font-bold text-indigo-700" x-text="printData.previousSchool"></span></div>
+                                </div>
+                            </div>
+
+                            <p>ในการนี้ สำนักทะเบียนและประเมินผล มหาวิทยาลัยเฉลิมกาญจนา วิทยาเขต/ศูนย์<span x-text="printData.campus"></span> จึงขอความอนุเคราะห์จากท่านได้โปรดตรวจสอบความถูกต้องแท้จริงของหลักฐานการศึกษาดังกล่าว พร้อมทั้งยืนยันผลกลับมายังมหาวิทยาลัย จักขอบคุณยิ่ง</p>
+                        </div>
+
+                        <!-- Signature Section -->
+                        <div class="pt-12 flex justify-end">
+                            <div class="text-center space-y-2 w-64">
+                                <p class="text-sm">(ลงชื่อ)........................................................</p>
+                                <p class="text-sm font-semibold">(........................................................)</p>
+                                <p class="text-xs text-slate-600">นายทะเบียน มหาวิทยาลัยเฉลิมกาญจนา<br>วิทยาเขต/ศูนย์<span x-text="printData.campus"></span></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Print Action Footer -->
+                <div class="bg-slate-50 px-6 py-4 flex items-center justify-end space-x-3 border-t border-slate-200 no-print">
+                    <button @click="closePrintModal()" class="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-700 font-medium hover:bg-slate-100 text-sm transition">
+                        ปิดหน้าต่าง
+                    </button>
+                    <button @click="window.print()" class="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow transition flex items-center space-x-2">
+                        <i class="fa-solid fa-print"></i>
+                        <span>สั่งพิมพ์เอกสาร</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODAL: REPORT PDF PREVIEW -->
+        <div x-show="showReportModal" x-cloak class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4">
+            <div @click.outside="closeReportModal()" class="bg-white rounded-2xl shadow-2xl max-w-4xl w-full overflow-hidden">
+                <!-- Modal Header -->
+                <div class="bg-cku-blue text-white px-6 py-4 flex items-center justify-between no-print">
+                    <div class="flex items-center space-x-2">
+                        <i class="fa-solid fa-file-pdf text-cku-gold text-lg"></i>
+                        <h3 class="font-bold text-lg" x-text="'รายงานสรุป: ' + reportTitle"></h3>
+                    </div>
+                    <button @click="closeReportModal()" class="text-white/80 hover:text-white p-1">
+                        <i class="fa-solid fa-xmark text-xl"></i>
+                    </button>
+                </div>
+
+                <!-- Printable Report Area -->
+                <div class="p-8 bg-white text-slate-900 font-sans" id="reportPrintableArea">
+                    <div class="max-w-3xl mx-auto space-y-6">
+                        <!-- Header -->
+                        <div class="text-center border-b-2 border-slate-300 pb-4 space-y-1">
+                            <h2 class="text-xl font-bold text-cku-blue">มหาวิทยาลัยเฉลิมกาญจนา</h2>
+                            <p class="text-xs text-slate-600">สำนักทะเบียนและประเมินผลการศึกษา • พิมพ์รายงาน ณ วันที่ <span x-text="currentDateFormatted"></span></p>
+                            <h3 class="text-lg font-bold text-indigo-900 mt-2" x-text="reportTitle"></h3>
+                        </div>
+
+                        <!-- Report Table -->
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse text-xs">
+                                <thead>
+                                    <tr class="bg-slate-100 text-slate-700 font-bold border-b border-slate-300">
+                                        <th class="py-2.5 px-3">ลำดับ</th>
+                                        <th class="py-2.5 px-3">เลขทะเบียน</th>
+                                        <th class="py-2.5 px-3">วิทยาเขต/ศูนย์</th>
+                                        <th class="py-2.5 px-3">รหัสนศ. / เลข ปชช</th>
+                                        <th class="py-2.5 px-3">ชื่อ - นามสกุล</th>
+                                        <th class="py-2.5 px-3">คณะ / สาขาวิชา</th>
+                                        <th class="py-2.5 px-3">ช่องทางจัดส่ง</th>
+                                        <th class="py-2.5 px-3">สถานะ</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-200">
+                                    <template x-for="(item, index) in reportItems" :key="item.id">
+                                        <tr>
+                                            <td class="py-2 px-3 font-semibold" x-text="index + 1"></td>
+                                            <td class="py-2 px-3 font-mono font-bold text-cku-blue" x-text="item.regNo"></td>
+                                            <td class="py-2 px-3 font-semibold text-indigo-900" x-text="item.campus"></td>
+                                            <td class="py-2 px-3 font-mono">
+                                                <div x-text="item.studentId"></div>
+                                                <div class="text-[10px] text-slate-500" x-text="item.idCard"></div>
+                                            </td>
+                                            <td class="py-2 px-3">
+                                                <div class="font-bold" x-text="item.fullname"></div>
+                                                <template x-if="item.nameChangeInfo">
+                                                    <div class="text-[10px] text-amber-600" x-text="'เปลี่ยนชื่อ: ' + item.nameChangeInfo"></div>
+                                                </template>
+                                            </td>
+                                            <td class="py-2 px-3">
+                                                <div x-text="item.faculty"></div>
+                                                <div class="text-[10px] text-slate-500" x-text="item.major"></div>
+                                            </td>
+                                            <td class="py-2 px-3" x-text="item.deliveryType"></td>
+                                            <td class="py-2 px-3 font-semibold" x-text="item.status"></td>
+                                        </tr>
+                                    </template>
+                                    <template x-if="reportItems.length === 0">
+                                        <tr>
+                                            <td colspan="8" class="py-8 text-center text-slate-400">ไม่พบข้อมูลในรายงานนี้ตามเงื่อนไขที่เลือก</td>
+                                        </tr>
+                                    </template>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Summary footer -->
+                        <div class="text-xs text-slate-600 flex justify-between pt-4 border-t border-slate-200">
+                            <p>จำนวนรวมทั้งสิ้น: <span class="font-bold text-slate-900" x-text="reportItems.length"></span> รายการ</p>
+                            <p>ผู้พิมพ์รายงาน: เจ้าหน้าที่งานทะเบียน</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Report Footer Actions -->
+                <div class="bg-slate-50 px-6 py-4 flex items-center justify-end space-x-3 border-t border-slate-200 no-print">
+                    <button @click="closeReportModal()" class="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-700 font-medium hover:bg-slate-100 text-sm transition">
+                        ปิดหน้าต่าง
+                    </button>
+                    <button @click="window.print()" class="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow transition flex items-center space-x-2">
+                        <i class="fa-solid fa-print"></i>
+                        <span>พิมพ์รายงาน PDF / บันทึก PDF</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="bg-white border-t border-slate-200 mt-auto py-6 text-center text-xs text-slate-500">
+            <p>มหาวิทยาลัยเฉลิมกาญจนา • สำนักทะเบียนและประเมินผลการศึกษา All Rights Reserved © 2026</p>
+        </footer>
+    </div>
+
+    <script>
+        function graduationApp() {
+            return {
+                currentTab: 'dashboard',
+                mobileMenuOpen: false,
+                requests: [],
+                searchQuery: '',
+                filterCampus: 'all',
+                filterStatus: 'all',
+                filterDelivery: 'all',
+                showModal: false,
+                isEditMode: false,
+                
+                showPrintModal: false,
+                printData: {},
+
+                showReportModal: false,
+                reportTitle: '',
+                reportItems: [],
+
+                // Advanced Export Filters State
+                exportFilter: {
+                    category: 'all',
+                    campus: 'all',
+                    delivery: 'all'
+                },
+
+                toast: {
+                    show: false,
+                    message: '',
+                    type: 'success'
+                },
+
+                form: {
+                    id: null,
+                    regNo: '',
+                    campus: 'ระยอง',
+                    idCard: '',
+                    studentId: '',
+                    fullname: '',
+                    nameChangeInfo: '',
+                    previousSchool: '',
+                    faculty: 'คณะรัฐศาสตร์',
+                    major: '',
+                    phone: '',
+                    deliveryType: 'ไปรษณีย์',
+                    address: '',
+                    trackingNo: '',
+                    status: 'กำลังดำเนินการ'
+                },
+
+                init() {
+                    const saved = localStorage.getItem('cku_grad_requests_v4');
+                    if (saved) {
+                        try {
+                            this.requests = JSON.parse(saved);
+                        } catch (e) {
+                            this.requests = [];
+                        }
+                    }
+
+                    if (this.requests.length === 0) {
+                        this.requests = [
+                            {
+                                id: '1',
+                                regNo: 'มฉน.0301',
+                                campus: 'ระยอง',
+                                idCard: '1219900123456',
+                                studentId: '6440301001',
+                                fullname: 'นายกิตติศักดิ์ พัฒนากุล',
+                                nameChangeInfo: '',
+                                previousSchool: 'วิทยาลัยเทคนิกระยอง',
+                                faculty: 'คณะรัฐศาสตร์',
+                                major: 'รัฐศาสตรบัณฑิต',
+                                phone: '0812345678',
+                                deliveryType: 'ไปรษณีย์',
+                                address: '123/4 ถ.สุขุมวิท ต.เนินพระ อ.เมือง จ.ระยอง 21000',
+                                trackingNo: 'TH9876543210',
+                                status: 'ส่งการเงิน'
+                            },
+                            {
+                                id: '2',
+                                regNo: 'มฉน.0302',
+                                campus: 'ศรีสะเกษ',
+                                idCard: '3219900987654',
+                                studentId: '6440301025',
+                                fullname: 'นางสาวนริศรา ใจมั่น',
+                                nameChangeInfo: 'จาก นุสรา ใจมั่น',
+                                previousSchool: 'วิทยาลัยอาชีวศึกษาศรีสะเกษ',
+                                faculty: 'คณะบริหารธุรกิจและการบัญชี',
+                                major: 'บัญชีบัณฑิต',
+                                phone: '0898765432',
+                                deliveryType: 'ถือไปเอง',
+                                address: '',
+                                trackingNo: '',
+                                status: 'ค้างชำระ'
+                            },
+                            {
+                                id: '3',
+                                regNo: 'มฉน.0303',
+                                campus: 'บุรีรัมย์',
+                                idCard: '1103700456789',
+                                studentId: '6440302011',
+                                fullname: 'นายธนดล สุขสบาย',
+                                nameChangeInfo: '',
+                                previousSchool: 'โรงเรียนบุรีรัมย์พิทยาคม',
+                                faculty: 'คณะศึกษาศาสตร์',
+                                major: 'ศึกษาศาสตรบัณฑิต',
+                                phone: '0865554433',
+                                deliveryType: 'ไปรษณีย์',
+                                address: '45/8 หมู่ 2 ต.อิสาณ อ.เมือง จ.บุรีรัมย์ 31000',
+                                trackingNo: 'ED554433221TH',
+                                status: 'เสร็จสมบูรณ์'
+                            },
+                            {
+                                id: '4',
+                                regNo: 'มฉน.0304',
+                                campus: 'นครศรีธรรมราช',
+                                idCard: '2219900112233',
+                                studentId: '6440303088',
+                                fullname: 'นางสาวศิริพร แซ่ตั้ง',
+                                nameChangeInfo: '',
+                                previousSchool: 'วิทยาลัยเทคนิคนครศรีธรรมราช',
+                                faculty: 'คณะพยาศาสตร์และวิทยาศาสตร์สุขภาพ',
+                                major: 'พยาบาลศาสตรบัณฑิต',
+                                phone: '0831112233',
+                                deliveryType: 'ถือไปเอง',
+                                address: '',
+                                trackingNo: '',
+                                status: 'เสร็จสมบูรณ์'
+                            }
+                        ];
+                        this.persist();
+                    }
+                },
+
+                persist() {
+                    localStorage.setItem('cku_grad_requests_v4', JSON.stringify(this.requests));
+                },
+
+                showToastMsg(msg, type = 'success') {
+                    this.toast.message = msg;
+                    this.toast.type = type;
+                    this.toast.show = true;
+                    setTimeout(() => {
+                        this.toast.show = false;
+                    }, 3500);
+                },
+
+                generateNextRegNo() {
+                    let maxNum = 300;
+                    this.requests.forEach(r => {
+                        if (r.regNo && r.regNo.includes('มฉน.')) {
+                            const numStr = r.regNo.replace('มฉน.', '').trim();
+                            const num = parseInt(numStr, 10);
+                            if (!isNaN(num) && num > maxNum) {
+                                maxNum = num;
+                            }
+                        }
+                    });
+                    const nextNum = maxNum + 1;
+                    return `มฉน.${String(nextNum).padStart(4, '0')}`;
+                },
+
+                openNewModal() {
+                    this.isEditMode = false;
+                    this.form = {
+                        id: Date.now().toString(),
+                        regNo: this.generateNextRegNo(),
+                        campus: 'ระยอง',
+                        idCard: '',
+                        studentId: '',
+                        fullname: '',
+                        nameChangeInfo: '',
+                        previousSchool: '',
+                        faculty: 'คณะรัฐศาสตร์',
+                        major: '',
+                        phone: '',
+                        deliveryType: 'ไปรษณีย์',
+                        address: '',
+                        trackingNo: '',
+                        status: 'กำลังดำเนินการ'
+                    };
+                    this.showModal = true;
+                },
+
+                openEditModal(item) {
+                    this.isEditMode = true;
+                    this.form = { ...item };
+                    this.showModal = true;
+                },
+
+                closeModal() {
+                    this.showModal = false;
+                },
+
+                openPrintModal(item) {
+                    this.printData = { ...item };
+                    this.showPrintModal = true;
+                },
+
+                closePrintModal() {
+                    this.showPrintModal = false;
+                },
+
+                // Helper to filter data based on export toolbar selections
+                getExportFilteredItems() {
+                    return this.requests.filter(r => {
+                        // Category / Status Filter
+                        let matchCat = true;
+                        const cat = this.exportFilter.category;
+                        if (cat === 'ส่งการเงินและค้างชำระ') {
+                            matchCat = (r.status === 'ส่งการเงิน' || r.status === 'ค้างชำระ');
+                        } else if (cat === 'กำลังดำเนินการ') {
+                            matchCat = (r.status === 'กำลังดำเนินการ');
+                        } else if (cat === 'ได้รับแล้ว') {
+                            matchCat = (r.status === 'ได้รับแล้ว');
+                        } else if (cat === 'ยังไม่ได้รับ') {
+                            matchCat = (r.status === 'ยังไม่ได้รับ');
+                        } else if (cat === 'มีปัญหา') {
+                            matchCat = (r.status === 'มีปัญหา');
+                        } else if (cat === 'เสร็จสมบูรณ์') {
+                            matchCat = (r.status === 'เสร็จสมบูรณ์');
+                        }
+
+                        // Campus Filter
+                        const matchCamp = (this.exportFilter.campus === 'all' || r.campus === this.exportFilter.campus);
+
+                        // Delivery Filter
+                        const matchDeliv = (this.exportFilter.delivery === 'all' || r.deliveryType === this.exportFilter.delivery);
+
+                        return matchCat && matchCamp && matchDeliv;
+                    });
+                },
+
+                openCustomReportModal() {
+                    const cat = this.exportFilter.category;
+                    let titleName = 'รายงานรายชื่อนักศึกษาทั้งหมด';
+                    if (cat === 'ส่งการเงินและค้างชำระ') titleName = 'รายงานรายชื่อส่งการเงินและค้างชำระ';
+                    else if (cat === 'กำลังดำเนินการ') titleName = 'รายงานรายชื่อกำลังดำเนินการ (ตรวจวุฒิ)';
+                    else if (cat === 'ได้รับแล้ว') titleName = 'รายงานรายชื่อได้รับวุฒิแล้ว';
+                    else if (cat === 'ยังไม่ได้รับ') titleName = 'รายงานรายชื่อยังไม่ได้รับวุฒิ';
+                    else if (cat === 'มีปัญหา') titleName = 'รายงานรายชื่อนักศึกษาที่มีปัญหา';
+                    else if (cat === 'เสร็จสมบูรณ์') titleName = 'รายงานรายชื่อเสร็จสมบูรณ์';
+
+                    const campText = this.exportFilter.campus === 'all' ? 'ทุกวิทยาเขต/ศูนย์' : `วิทยาเขต/ศูนย์: ${this.exportFilter.campus}`;
+                    this.reportTitle = `${titleName} (${campText})`;
+                    this.reportItems = this.getExportFilteredItems();
+                    this.showReportModal = true;
+                },
+
+                closeReportModal() {
+                    this.showReportModal = false;
+                },
+
+                exportCustomExcel() {
+                    const items = this.getExportFilteredItems();
+                    if (items.length === 0) {
+                        alert('ไม่พบข้อมูลตามเงื่อนไขที่เลือกสำหรับส่งออกไฟล์ Excel');
+                        return;
+                    }
+                    const catName = this.exportFilter.category === 'all' ? 'นักศึกษาทั้งหมด' : this.exportFilter.category;
+                    const campName = this.exportFilter.campus === 'all' ? 'ทุกศูนย์' : this.exportFilter.campus;
+                    const filename = `รายงาน_${catName}_${campName}_มหาวิทยาลัยเฉลิมกาญจนา.csv`;
+                    this.downloadCSV(items, filename);
+                },
+
+                downloadCSV(data, filename) {
+                    let csvContent = "\uFEFF"; // UTF-8 BOM for Thai support in Excel
+                    csvContent += "เลขทะเบียนคำขอ,วิทยาเขต/ศูนย์,เลขประจำตัวประชาชน,รหัสนักศึกษา,ชื่อ-นามสกุล,การเปลี่ยนชื่อ,คณะ,สาขาวิชา,สถาบันเดิม,เบอร์โทร,ช่องทางจัดส่ง,สถานะ\r\n";
+
+                    data.forEach(r => {
+                        const row = [
+                            `"${r.regNo || ''}"`,
+                            `"${r.campus || ''}"`,
+                            `"${r.idCard || ''}"`,
+                            `"${r.studentId || ''}"`,
+                            `"${r.fullname || ''}"`,
+                            `"${r.nameChangeInfo || ''}"`,
+                            `"${r.faculty || ''}"`,
+                            `"${r.major || ''}"`,
+                            `"${r.previousSchool || ''}"`,
+                            `"${r.phone || ''}"`,
+                            `"${r.deliveryType || ''}"`,
+                            `"${r.status || ''}"`
+                        ];
+                        csvContent += row.join(",") + "\r\n";
+                    });
+
+                    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement("a");
+                    link.setAttribute("href", url);
+                    link.setAttribute("download", filename);
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    this.showToastMsg('ส่งออกไฟล์ Excel (CSV) สำเร็จแล้ว');
+                },
+
+                saveRequest() {
+                    if (this.isEditMode) {
+                        const index = this.requests.findIndex(r => r.id === this.form.id);
+                        if (index !== -1) {
+                            this.requests[index] = { ...this.form };
+                        }
+                        this.showToastMsg('อัปเดตข้อมูลคำขอเรียบร้อยแล้ว');
+                    } else {
+                        this.requests.unshift({ ...this.form });
+                        this.showToastMsg('สร้างคำขอทำจบและออกเลขทะเบียนอัตโนมัติสำเร็จ');
+                    }
+                    this.persist();
+                    this.showModal = false;
+                },
+
+                deleteRequest(id) {
+                    if (confirm('คุณต้องการลบรายการคำขอนี้ใช่หรือไม่?')) {
+                        this.requests = this.requests.filter(r => r.id !== id);
+                        this.persist();
+                        this.showToastMsg('ลบรายการเรียบร้อยแล้ว', 'error');
+                    }
+                },
+
+                resubmitWithNewNumber(item) {
+                    const newReg = this.generateNextRegNo();
+                    item.regNo = newReg;
+                    item.status = 'กำลังดำเนินการ';
+                    this.persist();
+                    this.showToastMsg(`ดำเนินการส่งใหม่สำเร็จ! ระบบได้รันเลขทะเบียนใหม่เป็น ${newReg} แล้ว`);
+                },
+
+                get currentDateFormatted() {
+                    const d = new Date();
+                    return d.toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
+                },
+
+                get stats() {
+                    return {
+                        total: this.requests.length,
+                        debt: this.requests.filter(r => r.status === 'ค้างชำระ').length,
+                        sentFinance: this.requests.filter(r => r.status === 'ส่งการเงิน').length,
+                        inProgress: this.requests.filter(r => r.status === 'กำลังดำเนินการ').length,
+                        received: this.requests.filter(r => r.status === 'ได้รับแล้ว').length,
+                        notReceived: this.requests.filter(r => r.status === 'ยังไม่ได้รับ').length,
+                        issue: this.requests.filter(r => r.status === 'มีปัญหา').length,
+                        completed: this.requests.filter(r => r.status === 'เสร็จสมบูรณ์').length,
+                    };
+                },
+
+                get incompleteList() {
+                    return this.requests.filter(r => r.status !== 'เสร็จสมบูรณ์');
+                },
+
+                get filteredRequests() {
+                    return this.requests.filter(r => {
+                        const q = this.searchQuery.toLowerCase();
+                        const matchQuery = q === '' || 
+                            r.fullname.toLowerCase().includes(q) ||
+                            r.studentId.toLowerCase().includes(q) ||
+                            r.idCard.toLowerCase().includes(q) ||
+                            r.regNo.toLowerCase().includes(q);
+                        
+                        const matchCampus = this.filterCampus === 'all' || r.campus === this.filterCampus;
+                        const matchStatus = this.filterStatus === 'all' || r.status === this.filterStatus;
+                        const matchDelivery = this.filterDelivery === 'all' || r.deliveryType === this.filterDelivery;
+
+                        return matchQuery && matchCampus && matchStatus && matchDelivery;
+                    });
+                }
+            }
+        }
+    </script>
+</body>
+</html>
